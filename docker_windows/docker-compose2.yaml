@@ -1,0 +1,68 @@
+services:
+
+  mysql:
+    image: mysql:8.0  # MySQL镜像
+    container_name: mysql  # 容器名称
+    restart: unless-stopped  # 重启策略
+    environment:
+      MYSQL_ROOT_PASSWORD: Atguigu.123  # root密码
+      MYSQL_USER: atguigu  # 普通用户名
+      MYSQL_PASSWORD: Atguigu.123  # 普通用户密码
+    ports:
+      - "3306:3306"  # MySQL端口映射
+    volumes:
+      - mysql_data:/var/lib/mysql  # 数据持久化
+      - ./mysql:/docker-entrypoint-initdb.d  # 初始化SQL脚本
+    command:
+      --character-set-server=utf8mb4  # 字符集
+      --collation-server=utf8mb4_general_ci  # 排序规则
+
+  elasticsearch:
+    build: ./elasticsearch  # 从本地Dockerfile构建
+    container_name: elasticsearch  # 容器名称
+    restart: unless-stopped  # 重启策略
+    environment:
+      discovery.type: single-node  # 单节点模式
+      xpack.security.enabled: "false"  # 禁用安全认证
+    ports:
+      - "9200:9200"  # ES HTTP端口映射
+    volumes:
+      - es_data:/usr/share/elasticsearch/data  # ES数据持久化
+  kibana:
+    image: kibana:8.19.10  # Kibana镜像
+    container_name: kibana  # 容器名称
+    restart: unless-stopped  # 重启策略
+    environment:
+      ELASTICSEARCH_HOSTS: http://elasticsearch:9200  # 关联ES地址
+    ports:
+      - "5601:5601"  # Kibana端口映射
+    depends_on:
+      - elasticsearch  # 依赖ES先启动
+
+  qdrant:
+    image: qdrant/qdrant:v1.16  # Qdrant向量数据库镜像
+    container_name: qdrant  # 容器名称
+    restart: unless-stopped  # 重启策略
+    ports:
+      - "6333:6333"   # HTTP
+      - "6334:6334"   # gRPC
+    volumes:
+      - qdrant_data:/qdrant/storage  # Qdrant数据持久化
+
+  embedding:
+    image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.8  # 文本向量推理镜像(CPU版)
+    container_name: embedding  # 容器名称
+    restart: unless-stopped  # 重启策略
+    ports:
+      - "8081:80"  # 向量服务端口映射
+    environment:
+      MODEL_ID: /models/bge-large-zh-v1.5  # 使用的嵌入模型ID
+      MAX_CONCURRENT_REQUESTS: "16"  # 最大并发请求数
+      MAX_BATCH_TOKENS: "16384"  # 最大批次token数
+    volumes:
+      - ./embedding/bge-large-zh-v1.5:/models/bge-large-zh-v1.5  # 挂载模型文件
+
+volumes:
+  mysql_data:  # MySQL数据卷
+  es_data:  # Elasticsearch数据卷
+  qdrant_data:  # Qdrant数据卷

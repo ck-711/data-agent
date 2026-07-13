@@ -1,0 +1,12 @@
+FROM elasticsearch:8.19.10  # 基于Elasticsearch 8.19.10官方镜像构建
+
+USER root  # 切换到root用户以执行安装操作
+
+COPY plugins/elasticsearch-analysis-ik-8.19.10.zip /tmp/  # 将IK中文分词器插件zip包复制到容器
+
+RUN /usr/share/elasticsearch/bin/elasticsearch-plugin install --batch \  # 使用Elasticsearch插件工具安装分词器，batch模式跳过确认
+    file:///tmp/elasticsearch-analysis-ik-8.19.10.zip  # 指定本地插件zip包路径
+
+RUN chown -R elasticsearch:elasticsearch /usr/share/elasticsearch/plugins  # 将plugins目录所有权改为elasticsearch用户
+
+USER elasticsearch  # 切换回elasticsearch用户运行容器
