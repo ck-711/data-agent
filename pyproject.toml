@@ -16,7 +16,27 @@ dependencies = [
     "langgraph==1.0.7",
     "loguru==0.7.3",
     "omegaconf==2.3.0",
+    "python-dotenv>=1.0.0",
     "pyyaml==6.0.3",
     "qdrant-client==1.16.2",
     "sqlalchemy==2.0.46",
 ]
+
+[dependency-groups]
+training = [
+    "accelerate>=1.4.0",
+    "bitsandbytes>=0.46.0",
+    "datasets>=3.3.0",
+    "peft>=0.14.0",
+    "torch>=2.7.0",
+    "transformers>=4.48.0",
+    "trl>=0.15.0",
+]
+
+[[tool.uv.index]]
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true
+
+[tool.uv.sources]
+torch = { index = "pytorch-cu128" }

@@ -51,3 +51,4 @@ class DataAgentState(TypedDict):
     db_info: DBInfoState
     error:str
     sql:str
+    correction_attempts: int

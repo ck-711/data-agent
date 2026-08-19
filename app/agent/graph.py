@@ -16,6 +16,7 @@ from app.agent.node.merge_retrieved_info import merge_retrieved_info
 from app.agent.node.recall_column import recall_column
 from app.agent.node.recall_metric import recall_metric
 from app.agent.node.recall_value import recall_value
+from app.agent.node.reject_sql import reject_sql
 from app.agent.node.validate_sql import validate_sql
 from app.agent.state import DataAgentState
 from app.clients.embedding_client_manager import embedding_client_manager
@@ -44,6 +45,7 @@ graph_builder.add_node("add_extra_context",add_extra_context)
 graph_builder.add_node("generate_sql",generate_sql)
 graph_builder.add_node("validata_sql",validate_sql)
 graph_builder.add_node("correct_sql",correct_sql)
+graph_builder.add_node("reject_sql",reject_sql)
 graph_builder.add_node("execute_sql",execute_sql)
 
 
@@ -63,12 +65,23 @@ graph_builder.add_edge("add_extra_context","generate_sql")
 graph_builder.add_edge("generate_sql","validata_sql")
 
 # 添加带条件的边
-graph_builder.add_conditional_edges("validata_sql",
-                                    lambda state:"execute_sql" if state.get("error") is None else "correct_sql",
-                                    {"execute_sql":"execute_sql","correct_sql":"correct_sql"})
+def validation_route(state: DataAgentState) -> str:
+    if state.get("error") is None:
+        return "execute_sql"
+    if state.get("correction_attempts", 0) < 2:
+        return "correct_sql"
+    return "reject_sql"
 
-graph_builder.add_edge("correct_sql","execute_sql")
+
+graph_builder.add_conditional_edges(
+    "validata_sql",
+    validation_route,
+    {"execute_sql": "execute_sql", "correct_sql": "correct_sql", "reject_sql": "reject_sql"},
+)
+
+graph_builder.add_edge("correct_sql","validata_sql")
 graph_builder.add_edge("execute_sql",END)
+graph_builder.add_edge("reject_sql",END)
 
 # 编译图--获取全局graph对象
 graph=graph_builder.compile()

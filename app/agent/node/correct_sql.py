@@ -3,7 +3,7 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import PromptTemplate
 from langgraph.runtime import Runtime
 from app.agent.context import DataAgentContext
-from app.agent.llm import llm
+from app.agent.llm import correction_llm
 from app.agent.state import DataAgentState
 from app.core.log import logger
 from app.prompt.prompt_loader import load_prompt
@@ -27,7 +27,7 @@ async def correct_sql(state:DataAgentState,runtime:Runtime[DataAgentContext]):
 								input_variables=["table_infos", "metric_infos", "db_info", "date_info", "query",
 												 "error",
 												 "sql"])
-		chain = prompt | llm | StrOutputParser()
+		chain = prompt | correction_llm | StrOutputParser()
 		result = await chain.ainvoke({
 			"query": query,
 			"table_infos": yaml.dump(table_infos, allow_unicode=True, sort_keys=False),
@@ -37,12 +37,18 @@ async def correct_sql(state:DataAgentState,runtime:Runtime[DataAgentContext]):
 			"sql": sql,
 			"error": error
 		})
+		attempts = state.get("correction_attempts", 0) + 1
 		writer({"type": "progress", "step": "校正SQL", "status": "success"})
 		logger.info(f"校正SQL结果：{result}")
 		# 3.更新状态中SQL
-		return {"sql": result, "error": None}
+		return {"sql": result, "error": None, "correction_attempts": attempts}
 
 	except Exception as e:
 		writer({"type": "progress", "step": "校正SQL", "status": "error"})
 		logger.error(f"校正SQL失败, 错误信息: {str(e)}")
-		raise
+		# Correction is optional; an unavailable correction endpoint must never
+		# turn an invalid generated query into an executed query or a broken SSE.
+		return {
+			"error": f"SQL 校正服务不可用，已拒绝执行：{type(e).__name__}: {e}",
+			"correction_attempts": 2,
+		}

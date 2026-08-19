@@ -163,6 +163,11 @@ cython_debug/
 #.idea/
 
 docker_windows/embedding/
+data/hf-cache/
+data/modelscope-cache/
+data/models/
+data/finetuning/output/
+data/finetuning*/
 *.bin
 *.safetensors
 *.pt

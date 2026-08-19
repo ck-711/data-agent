@@ -41,5 +41,10 @@ es:
 
 
 llm:
-  model_name: deepseek-v4-pro
-  api_key: sk-b280e83420af411394bc8875f503ba3f
+  model_name: qwen2.5-coder-3b-sql-v3
+  api_key: ""
+  base_url: http://127.0.0.1:8001/v1
+  correction_model_name: deepseek-v4-pro
+  correction_api_key: ""
+  correction_base_url: ""
+  correction_proxy: http://127.0.0.1:10808

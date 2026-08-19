@@ -63,9 +63,21 @@ uv run python -m app.scripts.build_meta_knowledge --conf conf/meta_config.yaml
 
 ### 4. 启动后端
 
+先启动受保护的本地 Qwen 端点（默认使用 V3 adapter）：
+
+```powershell
+.\.venv\Scripts\python.exe -m app.scripts.serve_qwen --adapter data/finetuning_v3/output/qwen2.5-coder-3b-sql-v3 --port 8001
+```
+
+再启动应用：
+
 ```powershell
 uv run fastapi dev main.py --host 0.0.0.0 --port 8000
 ```
+
+应用使用 `http://127.0.0.1:8001/v1` 作为 Qwen 主生成端点；SQL 校正继续使用 `.env` 中的 `DATA_AGENT_LLM_API_KEY` 调用 API。生成结果必须通过 schema-aware guard 和二次校验，否则会拒绝执行。
+
+默认校正代理为 `http://127.0.0.1:10808`，可通过 `DATA_AGENT_LLM_CORRECTION_PROXY` 覆盖或置空。代理不可用时应用会返回拒绝执行事件，不会执行未通过校验的 SQL，也不会中断 SSE 响应。
 
 服务启动后可访问 `http://localhost:8000/docs` 查看 OpenAPI 文档。
 

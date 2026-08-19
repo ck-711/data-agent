@@ -1,6 +1,8 @@
 from dataclasses import dataclass
+import os
 from pathlib import Path
 
+from dotenv import load_dotenv
 from omegaconf import OmegaConf
 
 
@@ -61,6 +63,11 @@ class ESConfig:
 class LLMConfig:
     model_name: str
     api_key: str
+    base_url: str = ""
+    correction_model_name: str = ""
+    correction_api_key: str = ""
+    correction_base_url: str = ""
+    correction_proxy: str = ""
 
 
 @dataclass
@@ -74,7 +81,24 @@ class AppConfig:
     llm: LLMConfig
 
 
-config_file = Path(__file__).parents[2] / 'conf' / 'app_config.yaml'
+project_root = Path(__file__).parents[2]
+load_dotenv(project_root / ".env", override=False)
+config_file = project_root / 'conf' / 'app_config.yaml'
 context = OmegaConf.load(config_file)
 schema = OmegaConf.structured(AppConfig)
 app_config: AppConfig = OmegaConf.to_object(OmegaConf.merge(schema, context))
+app_config.llm.model_name = os.getenv("DATA_AGENT_LLM_MODEL", app_config.llm.model_name)
+app_config.llm.api_key = os.getenv("DATA_AGENT_LLM_API_KEY", app_config.llm.api_key or "")
+app_config.llm.base_url = os.getenv("DATA_AGENT_LLM_BASE_URL", app_config.llm.base_url or "")
+app_config.llm.correction_model_name = os.getenv(
+    "DATA_AGENT_LLM_CORRECTION_MODEL", app_config.llm.correction_model_name or ""
+)
+app_config.llm.correction_api_key = os.getenv(
+    "DATA_AGENT_LLM_CORRECTION_API_KEY", app_config.llm.correction_api_key or app_config.llm.api_key or ""
+)
+app_config.llm.correction_base_url = os.getenv(
+    "DATA_AGENT_LLM_CORRECTION_BASE_URL", app_config.llm.correction_base_url or ""
+)
+app_config.llm.correction_proxy = os.getenv(
+    "DATA_AGENT_LLM_CORRECTION_PROXY", app_config.llm.correction_proxy or ""
+)
